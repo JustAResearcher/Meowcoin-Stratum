@@ -299,12 +299,16 @@ class Job {
 
         merkleRootBuf.copy(headerBuf, 36);
 
-        // Use SEGWIT serialization for block data (includes marker, flag, witness)
-        const coinbaseWitnessBuf = _.coinbase.serializeWitness(share.client);
+        // SEGWIT format on APEX, LEGACY on pre-APEX (3.0.6) — pre-APEX nodes
+        // reject blocks whose coinbase carries a witness marker+flag.
+        const isApex = _._stratum.config.consensus !== 'legacy';
+        const coinbaseBlockBuf = isApex
+            ? _.coinbase.serializeWitness(share.client)
+            : coinbaseLegacyBuf;
 
         return {
             buffer: headerBuf,
-            coinbaseBuf: coinbaseWitnessBuf
+            coinbaseBuf: coinbaseBlockBuf
         };
     }
 
@@ -326,7 +330,8 @@ class Job {
             blockTemplate: _._blockTemplate,
             blockBrand: _._stratum.config.blockBrand,
             devAddress: _._stratum.config.devAddress,
-            devRewardPercent: _._stratum.config.devRewardPercent
+            devRewardPercent: _._stratum.config.devRewardPercent,
+            consensus: _._stratum.config.consensus
         });
     }
 

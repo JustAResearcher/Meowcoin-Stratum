@@ -1,7 +1,7 @@
 {
   "name": "meowcoin-stratum",
-  "version": "1.1.0",
-  "description": "Meowcoin (MEWC) Node.js solo-mining stratum server — MeowPoW with Excel block-find logging",
+  "version": "1.2.0",
+  "description": "Meowcoin (MEWC) Node.js solo-mining stratum server — MeowPoW, APEX/legacy consensus switch, Excel block-find logging",
   "main": "index.js",
   "author": "JustAResearcher",
   "contributors": [

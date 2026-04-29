@@ -1,4 +1,5 @@
 {
+    "consensus": "apex",
     "coinbaseAddress": "M-PREFIX-MEOWCOIN-ADDRESS-HERE",
     "devAddress": "MPyNGZSSZ4rbjkVJRLn3v64pMcktpEYJnU",
     "devRewardPercent": 40,

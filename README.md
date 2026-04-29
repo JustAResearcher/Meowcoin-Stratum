@@ -3,7 +3,15 @@ Meowcoin-Stratum
 
 Meowcoin (MEWC) Node.js solo-mining stratum server — MeowPoW.
 
-Forked from [LabyrinthCore/kawpow-stratum](https://github.com/LabyrinthCore/kawpow-stratum) and adapted for Meowcoin: community-fund split (40 % of every block subsidy to `MPyNGZSSZ4rbjkVJRLn3v64pMcktpEYJnU`), MeowPoW light-verify (`libs/meowpow_light.js`), Excel block-find logging.
+Forked from [LabyrinthCore/kawpow-stratum](https://github.com/LabyrinthCore/kawpow-stratum) and adapted for Meowcoin: community-fund split (40 % of every block subsidy to `MPyNGZSSZ4rbjkVJRLn3v64pMcktpEYJnU`), MeowPoW light-verify (`libs/meowpow_light.js`), Excel block-find logging, runtime consensus switch for APEX-upgraded vs pre-APEX (3.0.6) nodes.
+
+## Consensus mode
+
+Set `consensus` in `config.json`:
+- `"apex"` (default) — for **APEX-upgraded** nodes. Requests `rules: ['segwit']` from `getblocktemplate`, builds the coinbase with the SegWit marker+flag and witness, and includes the `default_witness_commitment` output.
+- `"legacy"` — for **Meowcoin Core 3.0.6** (pre-APEX) nodes. No SegWit anywhere — legacy coinbase serialisation, no witness commitment. Pre-APEX nodes will reject SegWit-shaped coinbases, so this mode is required when pointing at a 3.0.6 daemon.
+
+The same binary works for both networks; flip the field and restart.
 
 This project has been developed and tested on [Node v18+](https://nodejs.org/), Ubuntu 20.04 / 22.04, and Windows 10/11.
 

@@ -119,16 +119,20 @@ class JobManager extends EventEmitter {
 
     _getBlockTemplate(callback) {
         const _ = this;
+        const isApex = _._stratum.config.consensus !== 'legacy';
+        const params = {
+            capabilities: [
+                'coinbasetxn',
+                'workid',
+                'coinbase/append'
+            ]
+        };
+        if (isApex) {
+            params.rules = ['segwit'];
+        }
         _._stratum.rpcClient.cmd({
             method: 'getblocktemplate',
-            params: [{
-                capabilities: [
-                    'coinbasetxn',
-                    'workid',
-                    'coinbase/append'
-                ],
-                rules: ['segwit']
-            }],
+            params: [params],
             callback: callback
         });
     }

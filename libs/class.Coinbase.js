@@ -48,6 +48,7 @@ class Coinbase {
         _._blockBrand = args.blockBrand || '/@mintpond/ref-stratum/'
         _._devAddress = args.devAddress || null;
         _._devRewardPercent = args.devRewardPercent || 0;
+        _._consensus = args.consensus === 'legacy' ? 'legacy' : 'apex';
 
         _._coinbase1 = null;
         _._coinbase2 = null;
@@ -194,8 +195,12 @@ class Coinbase {
             _._addOutput(outputsArr, totalReward, poolAddressScript, true);
         }
 
+        // Pre-APEX (3.0.6) nodes don't support SegWit and shouldn't carry a
+        // witness commitment. The GBT response normally won't include one
+        // when `rules: ['segwit']` isn't requested, but gate explicitly to be
+        // safe against misconfigured nodes.
         const default_witness_commitment = blockTemplate.default_witness_commitment;
-        if (default_witness_commitment) {
+        if (default_witness_commitment && _._consensus === 'apex') {
 
             const witnessCommitmentBuf = Buffer.from(default_witness_commitment, 'hex');
 
