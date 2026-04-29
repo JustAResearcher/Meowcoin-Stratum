@@ -1,0 +1,14 @@
+node_modules/
+*.log
+*.xlsx
+
+# Live configs contain RPC credentials — copy from config.example.json
+config.json
+config_testnet4.json
+
+# Local debug artifacts
+test_keccak.c
+
+.vscode/
+.idea/
+.DS_Store

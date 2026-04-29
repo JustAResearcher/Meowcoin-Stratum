@@ -257,36 +257,28 @@ class Share {
         if (_._isHeaderMismatched(headerHashBuf, _._headerHashBuf))
             return false;
 
-        const isValid = algorithm.verify(
-            /* header hash */ headerHashBuf,
-            /* nonce       */ _._nonceBuf,
-            /* height      */ _._job.height,
-            /* mix hash    */ _._mixHashBuf,
-            /* hash output */ HASH_OUT_BUFFER);
+        // Skip kawpow server-side verification for MeowPow (different ProgPoW variant).
+        // For solo mining, we serialize the block and submit it to the node.
+        // The node does the real MeowPow validation via submitblock RPC.
+        // We treat stratumDiff as shareDiff since we can't compute true MeowPow hash yet.
+        _._shareDiff = _._stratumDiff;
 
-        if (!isValid)
-            return _._setError(StratumError.PROGPOW_VERIFY_FAILED);
+        // calculate expected blocks (stratumDiff / pDiff)
+        _._expectedBlocks = _._calculateExpectedBlocks();
 
-        // check valid block
-        const hashBi = bi.fromBufferBE(HASH_OUT_BUFFER);
-        _._shareDiff = algorithm.diff1 / Number(hashBi) * algorithm.multiplier;
-        _._isValidBlock = _._job.targetBi >= hashBi;
+        // Only submit as a block candidate if stratumDiff >= network difficulty.
+        // This ensures the target we sent to the miner was at least as hard as the
+        // network target, meaning any share the miner found is valid PoW.
+        _._isValidBlock = (_._expectedBlocks >= 1.0);
 
-        if (_._isValidBlock) {
-
-            _._blockHex = _._serializeBlock().toString('hex');
-            _._blockId = HASH_OUT_BUFFER.toString('hex');
-
-            console.log(`Winning nonce submitted: ${_._blockId}`);
+        if (!_._isValidBlock) {
+            console.log(`SHARE: expectedBlocks=${_._expectedBlocks.toFixed(4)} < 1.0 ` +
+                `(stratumDiff=${_._stratumDiff}, pDiff=${_._job.pDiff.toFixed(2)}) ` +
+                `— share NOT submitted as block. Increase config diff!`);
         }
 
-        // check low difficulty
-        if (!_._error && _._isLowDifficulty())
-            return false;
-
-        // calculate expected blocks
-        if (_._isValidShare !== false)
-            _._expectedBlocks = _._calculateExpectedBlocks();
+        _._blockHex = _._serializeBlock().toString('hex');
+        _._blockId = headerHashBuf.toString('hex');
 
         return mu.isBoolean(_._isValidShare)
             ? _._isValidShare

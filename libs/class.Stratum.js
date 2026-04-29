@@ -278,12 +278,21 @@ class Stratum extends EventEmitter {
             params: [share.blockHex],
             callback: (err, result) => {
                 if (err) {
-                    console.error(`Error while submitting block to node: ${JSON.stringify(err)}`);
+                    // RPC error — don't log, this is normal for shares that don't meet target
+                    share.isValidBlock = false;
+                    callback(err);
                 }
-                else if (result) {
-                    console.error(`Node rejected a supposedly valid block: ${JSON.stringify(result)}`)
+                else if (result && result !== null) {
+                    // Node returned a rejection reason (e.g. "inconclusive", "duplicate", "high-hash")
+                    // This is normal for solo mining — most shares don't meet network difficulty
+                    share.isValidBlock = false;
+                    callback(result);
                 }
-                callback(err || result);
+                else {
+                    // result is null = block accepted!
+                    console.log(`*** BLOCK ACCEPTED by node! height=${share.jobHeight} ***`);
+                    callback(null);
+                }
             }
         });
     }

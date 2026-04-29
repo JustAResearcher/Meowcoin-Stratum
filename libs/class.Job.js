@@ -45,8 +45,18 @@ class Job {
         _._nDiff = algorithm.diff1 / Number(_._targetBi);
         _._pDiff = _._nDiff * algorithm.multiplier;
 
-        _._versionBuf = buffers.packUInt32LE(_._blockTemplate.version);
-        _._versionHex = buffers.packUInt32BE(_._blockTemplate.version).toString('hex');
+        // Meowcoin requires chain ID 9 in the version after auxpow activation (height 1614560).
+        // getblocktemplate from our v28 node returns 0x20000000 (plain version bits).
+        // Network nodes enforce fStrictChainId=true and require:
+        //   bit 28 (0x10000000) = chain ID present flag
+        //   bits 16-22 = chain ID (9)
+        // So we OR in 0x10090000 to get 0x30090000.
+        const MEOWCOIN_CHAIN_ID_BITS = 0x10090000;
+        const rawVersion = _._blockTemplate.version;
+        const fixedVersion = rawVersion | MEOWCOIN_CHAIN_ID_BITS;
+
+        _._versionBuf = buffers.packUInt32LE(fixedVersion);
+        _._versionHex = buffers.packUInt32BE(fixedVersion).toString('hex');
 
         _._curTimeBuf = buffers.packUInt32LE(_._blockTemplate.curtime);
         _._curTimeHex = buffers.packUInt32BE(_._blockTemplate.curtime).toString('hex');
@@ -279,8 +289,9 @@ class Job {
 
         const _ = this;
 
-        const coinbaseBuf = _.coinbase.serialize(share.client);
-        const coinbaseHashBuf = buffers.sha256d(coinbaseBuf);
+        // Use LEGACY serialization for txid (merkle root computation)
+        const coinbaseLegacyBuf = _.coinbase.serialize(share.client);
+        const coinbaseHashBuf = buffers.sha256d(coinbaseLegacyBuf);
         const merkleRootBuf = _.merkleTree.withFirstHash(coinbaseHashBuf);
 
         const headerBuf = Buffer.alloc(80);
@@ -288,9 +299,12 @@ class Job {
 
         merkleRootBuf.copy(headerBuf, 36);
 
+        // Use SEGWIT serialization for block data (includes marker, flag, witness)
+        const coinbaseWitnessBuf = _.coinbase.serializeWitness(share.client);
+
         return {
             buffer: headerBuf,
-            coinbaseBuf: coinbaseBuf
+            coinbaseBuf: coinbaseWitnessBuf
         };
     }
 
@@ -310,7 +324,9 @@ class Job {
         return new Coinbase({
             coinbaseAddress: _._stratum.config.coinbaseAddress,
             blockTemplate: _._blockTemplate,
-            blockBrand: _._stratum.config.blockBrand
+            blockBrand: _._stratum.config.blockBrand,
+            devAddress: _._stratum.config.devAddress,
+            devRewardPercent: _._stratum.config.devRewardPercent
         });
     }
 
