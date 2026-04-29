@@ -1,9 +1,12 @@
 {
-  "name": "kawpow-stratum",
-  "version": "1.0.0",
-  "description": "KAWPoW Standalone implementation for using in a pool or solo mining",
+  "name": "meowcoin-stratum",
+  "version": "1.1.0",
+  "description": "Meowcoin (MEWC) Node.js solo-mining stratum server — MeowPoW with Excel block-find logging",
   "main": "index.js",
-  "author": "The Labyrinth Core developers",
+  "author": "JustAResearcher",
+  "contributors": [
+    "The Labyrinth Core developers (upstream kawpow-stratum)"
+  ],
   "license": "MIT",
   "dependencies": {
     "@mintpond/hasher-kawpow": "git+https://github.com/LabyrinthCore/kawpow-hasher",
@@ -18,9 +21,22 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/LabyrinthCore/kawpow-stratum.git"
+    "url": "https://github.com/JustAResearcher/Meowcoin-Stratum.git"
   },
   "engines": {
     "node": ">=10.13.0"
+  },
+  "devDependencies": {
+    "@yao-pkg/pkg": "^6.19.0"
+  },
+  "bin": "start.js",
+  "pkg": {
+    "scripts": [
+      "libs/**/*.js"
+    ],
+    "assets": [
+      "node_modules/@mintpond/hasher-kawpow/build/Release/kawpowhasher.node",
+      "node_modules/bindings/**/*.js"
+    ]
   }
 }

@@ -20,7 +20,7 @@ const ROUND_CONSTANTS = new Uint32Array([
 ]);
 
 // MeowCoin constants: ASCII "MEOWCOINMEOWPOW" as uint32 words
-const MEOWCOIN_KAWPOW = new Uint32Array([
+const MEOWCOIN_MEOWPOW = new Uint32Array([
     0x0000004D, // M
     0x00000045, // E
     0x0000004F, // O
@@ -253,7 +253,7 @@ function meowpowLightVerify(headerHashBuf, nonceBuf, mixHashBuf) {
 
     // Words 10-24: MeowCoin constants
     for (let i = 10; i < 25; i++) {
-        state1[i] = MEOWCOIN_KAWPOW[i - 10];
+        state1[i] = MEOWCOIN_MEOWPOW[i - 10];
     }
 
     keccakf800(state1);
@@ -273,7 +273,7 @@ function meowpowLightVerify(headerHashBuf, nonceBuf, mixHashBuf) {
 
     // Words 16-24: first 9 MeowCoin constants
     for (let i = 16; i < 25; i++) {
-        state2[i] = MEOWCOIN_KAWPOW[i - 16];
+        state2[i] = MEOWCOIN_MEOWPOW[i - 16];
     }
 
     keccakf800(state2);
@@ -294,7 +294,7 @@ function meowpowLightVerify(headerHashBuf, nonceBuf, mixHashBuf) {
 /**
  * Compute the full MeowPow block hash from the 80-byte header and PoW solution.
  *
- * @param {Buffer} header80 - 80-byte KawPow header (version+prev+merkle+time+bits+height)
+ * @param {Buffer} header80 - 80-byte MeowPoW header (version+prev+merkle+time+bits+height)
  * @param {Buffer} nonceBuf - 8-byte nonce LE
  * @param {Buffer} mixHashBuf - 32-byte mix_hash in standard order (MSB first)
  * @returns {Buffer} 32-byte block hash in standard order (for display: MSB first)

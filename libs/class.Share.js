@@ -257,10 +257,11 @@ class Share {
         if (_._isHeaderMismatched(headerHashBuf, _._headerHashBuf))
             return false;
 
-        // Skip kawpow server-side verification for MeowPow (different ProgPoW variant).
+        // Skip server-side MeowPoW verification (the upstream @mintpond/hasher-kawpow
+        // addon implements KAWPoW, a different ProgPoW variant).
         // For solo mining, we serialize the block and submit it to the node.
-        // The node does the real MeowPow validation via submitblock RPC.
-        // We treat stratumDiff as shareDiff since we can't compute true MeowPow hash yet.
+        // The node does the real MeowPoW validation via submitblock RPC.
+        // We treat stratumDiff as shareDiff since we can't compute true MeowPoW hash yet.
         _._shareDiff = _._stratumDiff;
 
         // calculate expected blocks (stratumDiff / pDiff)

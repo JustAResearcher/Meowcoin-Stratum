@@ -1,17 +1,20 @@
 {
-    "coinbaseAddress": "XyAY3TE3K29nrzQ2oo8JXyVPyGF3f7tq6P",
-    "blockBrand": "Labyrinth solo miner",
+    "coinbaseAddress": "M-PREFIX-MEOWCOIN-ADDRESS-HERE",
+    "devAddress": "MPyNGZSSZ4rbjkVJRLn3v64pMcktpEYJnU",
+    "devRewardPercent": 40,
+    "blockBrand": "Meowcoin Solo Miner",
     "host": "0.0.0.0",
     "port": {
-        "number": 3010,
-        "diff": 24
+        "number": 3333,
+        "diff": 100000
     },
     "rpc": {
         "host": "127.0.0.1",
-        "port": 4571,
+        "port": 9766,
         "user": "rpcuser",
-        "password": "rpcpassword"
+        "password": "change-me"
     },
     "jobUpdateInterval": 55,
-    "blockPollIntervalMs": 250
+    "blockPollIntervalMs": 250,
+    "blockLogFile": "block_finds.xlsx"
 }
