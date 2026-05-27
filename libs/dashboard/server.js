@@ -35,8 +35,11 @@ class DashboardServer {
 
     start(cb) {
         this._server = http.createServer((req, res) => this._handle(req, res));
+        // Bind failure must not kill mining — the dashboard is optional.
+        this._server.on('error', (err) => cb && cb(err));
         this._server.listen(this._port, this._host, () => {
-            cb && cb();
+            this._server.removeAllListeners('error');
+            cb && cb(null);
         });
     }
 

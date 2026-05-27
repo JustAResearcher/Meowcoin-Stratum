@@ -79,16 +79,24 @@ async function probeNode(rpcInfo) {
         return { ok: false, ...formatFriendly(chain, rpcInfo) };
     }
 
+    // Consensus detection from the daemon subversion string.
+    //   /Meowcoin:3.0.6/        → legacy (pre-APEX)
+    //   /Meowcoin:30.2.0/, etc. → apex
+    // Subversion is the source of truth. Anything we don't recognize → APEX
+    // (the modern default; legacy 3.0.6 nodes are effectively deprecated).
     const subver = (net.result.subversion || '').toLowerCase();
-    const versionInt = net.result.version || 0;
-    // APEX upgrade activation is tagged in the daemon's subversion string.
-    // Heuristic: subversion contains "apex", OR daemon protocol/version >= APEX threshold.
-    // Pre-APEX Meowcoin Core is 3.0.6 (version int 3000600). APEX builds are 4.x+.
-    let consensus;
-    if (subver.includes('apex')) consensus = 'apex';
-    else if (versionInt >= 4000000) consensus = 'apex';
-    else if (versionInt > 0 && versionInt < 4000000) consensus = 'legacy';
-    else consensus = 'apex'; // safe default for unknown new releases
+    let consensus = 'apex';
+    if (subver.includes('apex')) {
+        consensus = 'apex';
+    } else {
+        // Pull semver out of "/Meowcoin:X.Y.Z/"-shaped strings.
+        const m = subver.match(/meowcoin[^:]*:(\d+)\.(\d+)\.(\d+)/);
+        if (m) {
+            const major = parseInt(m[1], 10);
+            // Pre-APEX 3.x is legacy. Anything 4.x+ (or the post-APEX 30.x line) is APEX.
+            consensus = (major === 3) ? 'legacy' : 'apex';
+        }
+    }
 
     const chainName = (chain.result.chain || '').toLowerCase();
     let network = 'mainnet';

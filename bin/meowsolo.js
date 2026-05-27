@@ -18,12 +18,40 @@
 //   - Address on wrong network
 //   - Stratum port already in use
 
+// When the binary is launched by double-clicking on Windows, the console
+// window is owned by the .exe — when we exit, the window vanishes and the
+// user never sees the error. Pause so they can read it.
+function pauseBeforeExit(code) {
+    const isPackaged = typeof process.pkg !== 'undefined';
+    const isInteractive = !!(process.stdin.isTTY && process.stdout.isTTY);
+    if (!isPackaged || !isInteractive) {
+        process.exit(code);
+        return;
+    }
+    try {
+        process.stdout.write('\n[Press Enter to exit]');
+        process.stdin.resume();
+        process.stdin.once('data', () => process.exit(code));
+    } catch (_) {
+        process.exit(code);
+    }
+}
+
+// Force the Windows console to UTF-8 so our ✓/✗/box-drawing chars don't
+// render as mojibake under the default cp1252.
+if (process.platform === 'win32') {
+    try {
+        require('child_process').execSync('chcp 65001 > NUL', { windowsHide: true });
+    } catch (_) { /* best effort — older Windows or restricted env */ }
+}
+
 process.on('uncaughtException', (err) => {
     console.error('\n[FATAL] Uncaught exception:', err);
-    process.exit(1);
+    pauseBeforeExit(1);
 });
 process.on('unhandledRejection', (reason) => {
     console.error('\n[FATAL] Unhandled rejection:', reason);
+    pauseBeforeExit(1);
 });
 
 const fs = require('fs');
@@ -60,7 +88,7 @@ function parseArgs(argv) {
         else if (a === '--port') out.flags.dashboardPort = parseInt(args[++i], 10);
         else if (a === '-h' || a === '--help') out.flags.help = true;
         else if (a === '-v' || a === '--version') out.flags.version = true;
-        else { console.error('Unknown option:', a); process.exit(2); }
+        else { console.error('Unknown option:', a); pauseBeforeExit(2); return out; }
     }
     return out;
 }
@@ -93,7 +121,7 @@ async function bootstrapConfig({ configPath, force }) {
         } catch (err) {
             console.error(c('✗ config.json is not valid JSON: ' + err.message, C.red));
             console.error(c('  Either fix it or delete it and re-run to get the wizard back.', C.dim));
-            process.exit(1);
+            pauseBeforeExit(1); return;
         }
     }
     const { config } = await runWizard({ configPath, force: true });
@@ -128,13 +156,13 @@ async function main() {
     if (!config.coinbaseAddress) {
         console.error(c('✗ config.json has no coinbaseAddress.', C.red));
         console.error(c('  Run `meowsolo init` to set one.', C.dim));
-        process.exit(1);
+        pauseBeforeExit(1); return;
     }
     const addrCheck = validateCoinbaseAddress(config.coinbaseAddress, config.network || 'mainnet');
     if (!addrCheck.ok) {
         console.error(c('✗ Invalid coinbaseAddress: ' + addrCheck.message, C.red));
         console.error(c('  Run `meowsolo init` to fix.', C.dim));
-        process.exit(1);
+        pauseBeforeExit(1); return;
     }
 
     console.log(c('› Testing Meowcoin Core RPC...', C.cyan));
@@ -142,12 +170,16 @@ async function main() {
     if (!probe.ok) {
         console.error(c('✗ ' + probe.friendlyError, C.red));
         if (probe.hint) console.error(c('  ' + probe.hint, C.dim));
-        process.exit(1);
+        pauseBeforeExit(1); return;
     }
     console.log(c('✓', C.green) + ` Meowcoin Core ${probe.subversion} on ${c(probe.network, C.bold)} at ${config.rpc.host}:${config.rpc.port} (height ${probe.height}).`);
 
+    // Migrate legacy configs that pre-date these fields.
+    if (!config.consensus) config.consensus = probe.consensus;
+    if (!config.network) config.network = probe.network;
+
     if (probe.consensus !== config.consensus) {
-        console.warn(c(`! Consensus mismatch: node looks like ${probe.consensus.toUpperCase()} but config says ${(config.consensus || '').toUpperCase()}.`, C.yellow));
+        console.warn(c(`! Consensus mismatch: node looks like ${probe.consensus.toUpperCase()} but config says ${config.consensus.toUpperCase()}.`, C.yellow));
         console.warn(c('  Continuing with config value. If blocks get rejected, run `meowsolo init` to refresh.', C.dim));
     }
 
@@ -172,7 +204,13 @@ async function main() {
     if (!config.dashboard || config.dashboard.enabled !== false) {
         const dashPort = (config.dashboard && config.dashboard.port) || 8080;
         dashboardServer = new DashboardServer({ state: dashboardState, port: dashPort, host: '127.0.0.1' });
-        dashboardServer.start(() => {
+        dashboardServer.start((err) => {
+            if (err) {
+                console.warn(c(`! Dashboard couldn't bind to port ${dashPort}: ${err.code || err.message}`, C.yellow));
+                console.warn(c(`  Mining is still running. Free the port (or change dashboard.port in config.json) and restart to get the dashboard back.`, C.dim));
+                dashboardServer = null;
+                return;
+            }
             console.log(c('✓', C.green) + ` Dashboard: ${c('http://localhost:' + dashPort, C.bold)}`);
         });
     }
@@ -224,5 +262,5 @@ async function main() {
 main().catch((err) => {
     console.error(c('\n✗ Startup failed: ' + (err.message || err), C.red));
     if (err.stack) console.error(c(err.stack, C.dim));
-    process.exit(1);
+    pauseBeforeExit(1);
 });
