@@ -1,147 +1,114 @@
 # MeowSolo
 
-**A friendlier Meowcoin (MEWC) solo-mining stratum server.**
+Solo-mine Meowcoin (MEWC) in three clicks. Download, run, paste your address.
 
-Forked from [JustAResearcher/Meowcoin-Stratum](https://github.com/JustAResearcher/Meowcoin-Stratum) v1.2.0 — same MeowPoW engine, same APEX/legacy consensus support, same community-fund split. The mining is unchanged. What's new is everything around it:
+![MeowSolo dashboard](docs/dashboard.png)
 
-- **Setup wizard** — finds your `meowcoin.conf`, reads RPC creds, detects mainnet vs testnet, auto-picks APEX vs legacy consensus, validates your payout address. About 30 seconds end-to-end.
-- **Live web dashboard** at `http://localhost:8080` — workers, hashrate, recent shares, blocks found, node status. Updates in real time.
-- **One binary, no install** — Windows `.exe` or Linux binary. No Node.js, no `npm install`, no Visual Studio Build Tools.
-- **Real error messages** when something's wrong — "Meowcoin Core isn't running" instead of an unhandled rejection.
-- **Single command** for mainnet and testnet (`--testnet` flag), not two scripts.
+Forked from [JustAResearcher/Meowcoin-Stratum](https://github.com/JustAResearcher/Meowcoin-Stratum). Same MeowPoW engine, same APEX consensus. New: setup wizard, web dashboard, single binary, no Node install.
 
-## Quick start (Windows)
+## Download
 
-1. Make sure Meowcoin Core is running and synced. In `meowcoin.conf`, set:
-   ```
-   server=1
-   rpcuser=<anything>
-   rpcpassword=<a-long-random-string>
-   ```
-   Restart Core after editing.
+[**Latest release →**](https://github.com/JustAResearcher/Meowcoin-Stratum/releases/latest)
 
-2. Download `MeowSolo-windows-x64.zip` from [Releases](#), unzip anywhere.
+| | |
+|---|---|
+| Windows x64 | `MeowSolo-X.Y.Z-windows-x64.zip` |
+| Linux x86_64 | `MeowSolo-X.Y.Z-linux-x86_64.tar.gz` |
 
-3. Double-click `meowsolo.exe`. The wizard takes you through:
-   - confirms it found your Meowcoin Core config
-   - asks for your **M-prefix payout address** (validated against the network)
-   - picks a stratum port (default 3333)
-   - writes `config.json`
+## Quick start
 
-4. Point your miner at `stratum+tcp://127.0.0.1:3333` (or the LAN IP of this PC if mining from another machine — MeowSolo prints the exact URL when it starts). Any username works; the worker name shows up on the dashboard.
+**Prerequisite:** Meowcoin Core is installed, synced, and `meowcoin.conf` contains:
 
-5. Open `http://localhost:8080` to see live stats.
+```
+server=1
+rpcuser=meow
+rpcpassword=<a-long-random-string>
+```
 
-### SRBMiner-MULTI example (Windows .bat)
+(Restart Core after editing.)
 
-Save next to `SRBMiner-MULTI.exe`:
+Then:
+
+1. Unzip and run `meowsolo.exe` (Windows) or `./meowsolo` (Linux).
+2. The wizard finds your `meowcoin.conf`, asks for your M-prefix payout address, and writes `config.json`.
+3. Point your GPU miner at the stratum URL it prints — e.g. `stratum+tcp://127.0.0.1:3333`.
+4. Open `http://localhost:8080` for the live dashboard.
+
+That's it. Block rewards land in the address you entered, paid by your own Meowcoin Core when one of your miners finds a block.
+
+## Mining software
+
+Use any MeowPoW-capable GPU miner. The algorithm flag is `meowpow` — **not** `kawpow`.
+
+**SRBMiner-MULTI** (`start.bat` next to `SRBMiner-MULTI.exe`):
 
 ```batch
 @echo off
-title Meowcoin Solo Miner
 SRBMiner-MULTI.exe --algorithm meowpow --pool stratum+tcp://127.0.0.1:3333 --wallet x --password x
 pause
 ```
 
-Notes:
+**T-Rex / TeamRedMiner / NBMiner** — same flags pattern: `-a meowpow -o stratum+tcp://127.0.0.1:3333 -u x -p x`.
 
-- `--algorithm meowpow` — SRBMiner has dedicated MeowPoW support. Don't use `kawpow`; shares will be rejected.
-- The `--wallet` value is ignored for solo mining — your payout address is set in MeowSolo's `config.json`.
-- Don't paste literal `<…>` placeholders into a .bat — `cmd.exe` treats `<` as input redirection.
-- If SRBMiner runs on a different rig from MeowSolo, swap `127.0.0.1` for the MeowSolo box's LAN IP (printed when MeowSolo starts).
+Wallet/username/password values are ignored for solo mining. Your payout address is in MeowSolo's `config.json`.
 
-## Quick start (Linux)
+If MeowSolo is on a different PC from your miner, swap `127.0.0.1` for the LAN IP MeowSolo prints at startup.
 
-```bash
-wget https://github.com/JustAResearcher/Meowcoin-Stratum/releases/download/vX.Y.Z/MeowSolo-linux-x86_64.tar.gz
-tar xzf MeowSolo-linux-x86_64.tar.gz
-cd meowsolo
-./meowsolo
-```
+## Troubleshooting
 
-If `meowcoin.conf` isn't where Meowcoin Core would put it (`~/.meowcoin/`), the wizard will ask for the path.
+| Console says | Fix |
+|---|---|
+| `Couldn't connect to Meowcoin Core at 127.0.0.1:9766` | Start Meowcoin Core; ensure `server=1` is in `meowcoin.conf`. |
+| `RPC username/password rejected (401)` | Delete `config.json`, re-run, the wizard rewrites it. |
+| `Invalid coinbaseAddress` | Wrong network or typo. Run `meowsolo init` and paste a fresh address from your wallet. |
+| Miner connects but no shares | Lower `port.diff` in `config.json` (try `10000`) and restart. |
+| Found a block but it says "pending verify" | That's normal — Core verifies the next block. Usually clears within a minute. |
 
-## CLI
+## Configuration
 
-```
-meowsolo                  Run mining (interactive wizard on first run)
-meowsolo init             Re-run the setup wizard
-meowsolo --testnet        Default to testnet during the wizard
-meowsolo --no-dashboard   Skip the local web dashboard
-meowsolo --config PATH    Use a non-default config.json
-meowsolo --port N         Override dashboard port (default 8080)
-meowsolo --version
-meowsolo --help
-```
-
-## What if something goes wrong
-
-| Symptom | Likely cause | Fix |
-|---|---|---|
-| `Couldn't connect to Meowcoin Core at 127.0.0.1:9766` | Meowcoin Core isn't running, or `server=1` isn't set | Start Meowcoin Core; add `server=1` to `meowcoin.conf` and restart |
-| `Meowcoin Core rejected the RPC username/password (401)` | The rpcuser/rpcpassword in `config.json` doesn't match `meowcoin.conf` | Delete `config.json`, re-run the wizard |
-| `Invalid coinbaseAddress` | Address has a typo, or you used a testnet address on mainnet (or vice versa) | Run `meowsolo init` and paste a fresh address from your wallet |
-| Miner connects but no shares accepted | Stratum difficulty too high for your hashrate | Edit `config.json` and lower `port.diff` (try 10000) |
-
-## Building from source
-
-```bash
-git clone https://github.com/JustAResearcher/Meowcoin-Stratum.git meowsolo
-cd meowsolo
-npm install
-node bin/meowsolo.js
-```
-
-To produce single-file binaries (uses [`@yao-pkg/pkg`](https://github.com/yao-pkg/pkg)):
-
-```bash
-npm run build:win    # → dist/meowsolo.exe
-npm run build:linux  # → dist/meowsolo
-```
-
-## Configuration reference
-
-After the wizard runs, `config.json` looks like:
+The wizard generates `config.json`. You can hand-edit any of these later:
 
 ```json
 {
   "consensus": "apex",
-  "network": "mainnet",
-  "coinbaseAddress": "MFMrgv31Z3mTs2DehcTht2rgrnn41B6PzT",
-  "devAddress": "MPyNGZSSZ4rbjkVJRLn3v64pMcktpEYJnU",
-  "devRewardPercent": 40,
-  "host": "0.0.0.0",
-  "port": { "number": 3333, "diff": 100000 },
-  "rpc": {
-    "host": "127.0.0.1",
-    "port": 9766,
-    "user": "rpcuser",
-    "password": "..."
-  },
-  "jobUpdateInterval": 55,
-  "blockPollIntervalMs": 250,
-  "blockLogFile": "block_finds.xlsx",
+  "coinbaseAddress": "M...",
+  "port":    { "number": 3333, "diff": 100000 },
+  "rpc":     { "host": "127.0.0.1", "port": 9766, "user": "...", "password": "..." },
   "dashboard": { "enabled": true, "port": 8080 }
 }
 ```
 
-Tweakable fields:
+- `port.diff` — raise it if you have heavy hashrate (rule of thumb: ~`farm_MH/s × 1.5`).
+- `dashboard.enabled: false` (or `--no-dashboard`) to skip the web UI.
+- `consensus: "legacy"` only for pre-APEX Meowcoin Core 3.0.6 nodes (rare).
 
-- `port.diff` — initial stratum share difficulty. Roughly tune to `farm_MHs * 1.5`. Too high = no shares; too low = console flood.
-- `dashboard.enabled` — set `false` (or pass `--no-dashboard`) to skip the web UI.
-- `dashboard.port` — change if 8080 is taken.
-- `consensus` — `apex` for current Meowcoin Core, `legacy` for the pre-APEX 3.0.6 nodes. Auto-detected by the wizard.
+Block-finds get appended to `block_finds.xlsx` next to the binary — height, reward, worker, nonce, txid.
 
-## Block-find logging
+## CLI
 
-When a block is found, a row gets appended to `block_finds.xlsx` next to the binary: timestamp, height, reward (sats), worker, nonce, txid. Useful for record-keeping and tax season.
+```
+meowsolo                  Run mining (wizard on first run)
+meowsolo init             Re-run the wizard
+meowsolo --testnet        Force testnet defaults in the wizard
+meowsolo --no-dashboard   Skip the web UI
+meowsolo --config PATH    Use a non-default config.json
+meowsolo --port N         Override dashboard port (default 8080)
+meowsolo --version
+```
+
+## Build from source
+
+```bash
+git clone https://github.com/JustAResearcher/Meowcoin-Stratum.git
+cd Meowcoin-Stratum
+npm install
+node bin/meowsolo.js          # run directly
+npm run build:win             # → dist/meowsolo.exe
+npm run build:linux           # → dist/meowsolo (Linux x86_64)
+```
+
+Windows builds need the Visual Studio C++ workload (to compile the native MeowPoW addon). On Linux you need `build-essential` + Python.
 
 ## Credits
 
-- [JustAResearcher/Meowcoin-Stratum](https://github.com/JustAResearcher/Meowcoin-Stratum) — upstream Meowcoin stratum + APEX consensus switch
-- [LabyrinthCore/kawpow-stratum](https://github.com/LabyrinthCore/kawpow-stratum) — original kawpow-stratum base
-- The MintPond libraries (`mint-bitcoin-script`, `mint-bos`, `mint-merkle`, etc.)
-
-## License
-
-MIT. See `LICENSE`.
+[JustAResearcher/Meowcoin-Stratum](https://github.com/JustAResearcher/Meowcoin-Stratum) (upstream) · [LabyrinthCore/kawpow-stratum](https://github.com/LabyrinthCore/kawpow-stratum) (original) · [MintPond](https://github.com/MintPond) libraries. MIT.
