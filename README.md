@@ -1,92 +1,129 @@
-Meowcoin-Stratum
-================
+# MeowSolo
 
-Meowcoin (MEWC) Node.js solo-mining stratum server — MeowPoW.
+**A friendlier Meowcoin (MEWC) solo-mining stratum server.**
 
-Forked from [LabyrinthCore/kawpow-stratum](https://github.com/LabyrinthCore/kawpow-stratum) and adapted for Meowcoin: community-fund split (40 % of every block subsidy to `MPyNGZSSZ4rbjkVJRLn3v64pMcktpEYJnU`), MeowPoW light-verify (`libs/meowpow_light.js`), Excel block-find logging, runtime consensus switch for APEX-upgraded vs pre-APEX (3.0.6) nodes.
+Forked from [JustAResearcher/Meowcoin-Stratum](https://github.com/JustAResearcher/Meowcoin-Stratum) v1.2.0 — same MeowPoW engine, same APEX/legacy consensus support, same community-fund split. The mining is unchanged. What's new is everything around it:
 
-## Consensus mode
+- **Setup wizard** — finds your `meowcoin.conf`, reads RPC creds, detects mainnet vs testnet, auto-picks APEX vs legacy consensus, validates your payout address. About 30 seconds end-to-end.
+- **Live web dashboard** at `http://localhost:8080` — workers, hashrate, recent shares, blocks found, node status. Updates in real time.
+- **One binary, no install** — Windows `.exe` or Linux binary. No Node.js, no `npm install`, no Visual Studio Build Tools.
+- **Real error messages** when something's wrong — "Meowcoin Core isn't running" instead of an unhandled rejection.
+- **Single command** for mainnet and testnet (`--testnet` flag), not two scripts.
 
-Set `consensus` in `config.json`:
-- `"apex"` (default) — for **APEX-upgraded** nodes. Requests `rules: ['segwit']` from `getblocktemplate`, builds the coinbase with the SegWit marker+flag and witness, and includes the `default_witness_commitment` output.
-- `"legacy"` — for **Meowcoin Core 3.0.6** (pre-APEX) nodes. No SegWit anywhere — legacy coinbase serialisation, no witness commitment. Pre-APEX nodes will reject SegWit-shaped coinbases, so this mode is required when pointing at a 3.0.6 daemon.
+## Quick start (Windows)
 
-The same binary works for both networks; flip the field and restart.
+1. Make sure Meowcoin Core is running and synced. In `meowcoin.conf`, set:
+   ```
+   server=1
+   rpcuser=<anything>
+   rpcpassword=<a-long-random-string>
+   ```
+   Restart Core after editing.
 
-This project has been developed and tested on [Node v18+](https://nodejs.org/), Ubuntu 20.04 / 22.04, and Windows 10/11.
+2. Download `MeowSolo-windows-x64.zip` from [Releases](#), unzip anywhere.
 
-## Install — from source
+3. Double-click `meowsolo.exe`. The wizard takes you through:
+   - confirms it found your Meowcoin Core config
+   - asks for your **M-prefix payout address** (validated against the network)
+   - picks a stratum port (default 3333)
+   - writes `config.json`
 
-__Linux (Ubuntu / Debian / HiveOS)__
+4. Point your miner at `stratum+tcp://<your-pc-ip>:3333` with any username (the worker name shows up on the dashboard).
+
+5. Open `http://localhost:8080` to see live stats.
+
+## Quick start (Linux)
+
 ```bash
-sudo apt-get install -y build-essential
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/master/install.sh | bash
-source ~/.bashrc
-nvm install 18
+wget https://github.com/JustAResearcher/Meowcoin-Stratum/releases/download/vX.Y.Z/MeowSolo-linux-x86_64.tar.gz
+tar xzf MeowSolo-linux-x86_64.tar.gz
+cd meowsolo
+./meowsolo
+```
 
-git clone https://github.com/JustAResearcher/Meowcoin-Stratum.git
-cd Meowcoin-Stratum
+If `meowcoin.conf` isn't where Meowcoin Core would put it (`~/.meowcoin/`), the wizard will ask for the path.
+
+## CLI
+
+```
+meowsolo                  Run mining (interactive wizard on first run)
+meowsolo init             Re-run the setup wizard
+meowsolo --testnet        Default to testnet during the wizard
+meowsolo --no-dashboard   Skip the local web dashboard
+meowsolo --config PATH    Use a non-default config.json
+meowsolo --port N         Override dashboard port (default 8080)
+meowsolo --version
+meowsolo --help
+```
+
+## What if something goes wrong
+
+| Symptom | Likely cause | Fix |
+|---|---|---|
+| `Couldn't connect to Meowcoin Core at 127.0.0.1:9766` | Meowcoin Core isn't running, or `server=1` isn't set | Start Meowcoin Core; add `server=1` to `meowcoin.conf` and restart |
+| `Meowcoin Core rejected the RPC username/password (401)` | The rpcuser/rpcpassword in `config.json` doesn't match `meowcoin.conf` | Delete `config.json`, re-run the wizard |
+| `Invalid coinbaseAddress` | Address has a typo, or you used a testnet address on mainnet (or vice versa) | Run `meowsolo init` and paste a fresh address from your wallet |
+| Miner connects but no shares accepted | Stratum difficulty too high for your hashrate | Edit `config.json` and lower `port.diff` (try 10000) |
+
+## Building from source
+
+```bash
+git clone https://github.com/JustAResearcher/Meowcoin-Stratum.git meowsolo
+cd meowsolo
 npm install
+node bin/meowsolo.js
 ```
 
-__Windows__
-1. Install [Node.js LTS](https://nodejs.org/) and Visual Studio Build Tools (the C++ workload — needed to compile the native MeowPoW addon).
-2. Clone the repo and `npm install`.
-
-## Configure
+To produce single-file binaries (uses [`@yao-pkg/pkg`](https://github.com/yao-pkg/pkg)):
 
 ```bash
-cp config.example.json config.json
-# edit config.json — set coinbaseAddress and rpc credentials
+npm run build:win    # → dist/meowsolo.exe
+npm run build:linux  # → dist/meowsolo
 ```
 
-## Run
+## Configuration reference
 
-```bash
-node start.js                # mainnet
-node start_testnet4.js       # testnet4
-```
+After the wizard runs, `config.json` looks like:
 
-When the node accepts a block found by your miner, a row is appended to `block_finds.xlsx` in the working directory (date, height, reward, MEWC/USDT price, USD/CAD value, coinbase TxID, worker, nonce, cumulative totals).
-
-## Use as a module
-
-```javascript
-const Stratum = require('meowcoin-stratum').Stratum;
-
-class MyStratum extends Stratum {
-    /* Override */
-    canAuthorizeWorker(client, callback) {
-        if (client.minerAddress === 'bad') {
-            callback(null, false);
-        }
-        else {
-            callback(null, true);
-        }
-    }
+```json
+{
+  "consensus": "apex",
+  "network": "mainnet",
+  "coinbaseAddress": "MFMrgv31Z3mTs2DehcTht2rgrnn41B6PzT",
+  "devAddress": "MPyNGZSSZ4rbjkVJRLn3v64pMcktpEYJnU",
+  "devRewardPercent": 40,
+  "host": "0.0.0.0",
+  "port": { "number": 3333, "diff": 100000 },
+  "rpc": {
+    "host": "127.0.0.1",
+    "port": 9766,
+    "user": "rpcuser",
+    "password": "..."
+  },
+  "jobUpdateInterval": 55,
+  "blockPollIntervalMs": 250,
+  "blockLogFile": "block_finds.xlsx",
+  "dashboard": { "enabled": true, "port": 8080 }
 }
-
-const stratum = new MyStratum({
-    coinbaseAddress: 'MFMrgv31Z3mTs2DehcTht2rgrnn41B6PzT',
-    blockBrand: 'Meowcoin Solo Miner',
-    host: '0.0.0.0',
-    port: {
-        number: 3333,
-        diff: 100000  // ~1.5 × MH/s of farm hashrate
-    },
-    rpc: {
-        host: '127.0.0.1',
-        port: 9766,
-        user: 'meowminer',
-        password: 'change-me'
-    },
-    jobUpdateInterval: 55,
-    blockPollIntervalMs: 250
-});
-
-stratum.on(Stratum.EVENT_SHARE_SUBMITTED, ev => {
-    console.log(ev.share);
-});
-
-stratum.init();
 ```
+
+Tweakable fields:
+
+- `port.diff` — initial stratum share difficulty. Roughly tune to `farm_MHs * 1.5`. Too high = no shares; too low = console flood.
+- `dashboard.enabled` — set `false` (or pass `--no-dashboard`) to skip the web UI.
+- `dashboard.port` — change if 8080 is taken.
+- `consensus` — `apex` for current Meowcoin Core, `legacy` for the pre-APEX 3.0.6 nodes. Auto-detected by the wizard.
+
+## Block-find logging
+
+When a block is found, a row gets appended to `block_finds.xlsx` next to the binary: timestamp, height, reward (sats), worker, nonce, txid. Useful for record-keeping and tax season.
+
+## Credits
+
+- [JustAResearcher/Meowcoin-Stratum](https://github.com/JustAResearcher/Meowcoin-Stratum) — upstream Meowcoin stratum + APEX consensus switch
+- [LabyrinthCore/kawpow-stratum](https://github.com/LabyrinthCore/kawpow-stratum) — original kawpow-stratum base
+- The MintPond libraries (`mint-bitcoin-script`, `mint-bos`, `mint-merkle`, etc.)
+
+## License
+
+MIT. See `LICENSE`.

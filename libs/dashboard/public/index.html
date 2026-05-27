@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MeowSolo — Meowcoin solo mining</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header>
+    <div class="brand">
+        <span class="logo">🐾</span>
+        <span class="title">MeowSolo</span>
+        <span class="tag" id="net-tag">…</span>
+    </div>
+    <div class="conn" id="conn-status">connecting…</div>
+</header>
+
+<main>
+    <section class="kpis">
+        <div class="kpi">
+            <div class="label">Total hashrate</div>
+            <div class="value" id="kpi-hashrate">—</div>
+            <div class="sub" id="kpi-hashrate-sub">across <span id="kpi-workers">0</span> workers</div>
+        </div>
+        <div class="kpi">
+            <div class="label">Network height</div>
+            <div class="value" id="kpi-height">—</div>
+            <div class="sub" id="kpi-job">job —</div>
+        </div>
+        <div class="kpi">
+            <div class="label">Valid / invalid shares</div>
+            <div class="value"><span id="kpi-valid" class="ok">0</span> / <span id="kpi-invalid" class="bad">0</span></div>
+            <div class="sub" id="kpi-share-rate">— shares/min</div>
+        </div>
+        <div class="kpi">
+            <div class="label">Blocks found</div>
+            <div class="value" id="kpi-blocks">0</div>
+            <div class="sub">since startup</div>
+        </div>
+    </section>
+
+    <section class="card">
+        <h2>Workers</h2>
+        <table id="workers-table">
+            <thead>
+                <tr><th>Name</th><th>IP</th><th class="num">Hashrate</th><th class="num">Diff</th>
+                    <th class="num">Valid</th><th class="num">Invalid</th><th>Last share</th></tr>
+            </thead>
+            <tbody id="workers-body">
+                <tr><td colspan="7" class="empty">No workers connected yet. Point your miner at the stratum URL below.</td></tr>
+            </tbody>
+        </table>
+    </section>
+
+    <section class="two-col">
+        <div class="card">
+            <h2>Recent shares</h2>
+            <ul id="shares-list" class="feed">
+                <li class="empty">No shares yet.</li>
+            </ul>
+        </div>
+        <div class="card">
+            <h2>Blocks found</h2>
+            <ul id="blocks-list" class="feed">
+                <li class="empty">No blocks yet. You'll see them here when your miner finds one.</li>
+            </ul>
+        </div>
+    </section>
+
+    <section class="card info">
+        <h2>Configuration</h2>
+        <div class="kv-grid" id="info-grid">
+            <div class="k">Stratum URL</div><div class="v" id="info-stratum">—</div>
+            <div class="k">Payout address</div><div class="v mono" id="info-coinbase">—</div>
+            <div class="k">Meowcoin Core</div><div class="v" id="info-rpc">—</div>
+            <div class="k">Consensus</div><div class="v" id="info-consensus">—</div>
+            <div class="k">Community fund</div><div class="v" id="info-fund">—</div>
+            <div class="k">Uptime</div><div class="v" id="info-uptime">—</div>
+        </div>
+    </section>
+</main>
+
+<script src="/app.js"></script>
+</body>
+</html>

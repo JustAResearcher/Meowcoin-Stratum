@@ -1,9 +1,10 @@
 {
     "consensus": "apex",
+    "network": "mainnet",
     "coinbaseAddress": "M-PREFIX-MEOWCOIN-ADDRESS-HERE",
     "devAddress": "MPyNGZSSZ4rbjkVJRLn3v64pMcktpEYJnU",
     "devRewardPercent": 40,
-    "blockBrand": "Meowcoin Solo Miner",
+    "blockBrand": "MeowSolo Miner",
     "host": "0.0.0.0",
     "port": {
         "number": 3333,
@@ -17,5 +18,9 @@
     },
     "jobUpdateInterval": 55,
     "blockPollIntervalMs": 250,
-    "blockLogFile": "block_finds.xlsx"
+    "blockLogFile": "block_finds.xlsx",
+    "dashboard": {
+        "enabled": true,
+        "port": 8080
+    }
 }

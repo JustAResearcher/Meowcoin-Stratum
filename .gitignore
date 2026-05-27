@@ -1,9 +1,10 @@
 node_modules/
 build/
+dist/
 *.log
 *.xlsx
 
-# Live configs contain RPC credentials — copy from config.example.json
+# Live configs contain RPC credentials — the setup wizard generates this from scratch
 config.json
 config_testnet4.json
 
