@@ -11,8 +11,19 @@
 // already running with a default conf.
 
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const readline = require('readline');
+
+function detectLanIp() {
+    const ifaces = os.networkInterfaces();
+    for (const name of Object.keys(ifaces)) {
+        for (const iface of ifaces[name] || []) {
+            if (iface.family === 'IPv4' && !iface.internal && iface.address) return iface.address;
+        }
+    }
+    return '127.0.0.1';
+}
 
 const { autoDiscoverRpc, parseConf, DEFAULT_MAINNET_PORT, DEFAULT_TESTNET_PORT } = require('./conf');
 const { probeNode } = require('./probe');
@@ -168,7 +179,11 @@ async function run({ configPath, force = false } = {}) {
         fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
         process.stdout.write(color('✓ All set.\n', C.green));
         process.stdout.write('\n');
-        process.stdout.write(color('Point your miner at ', C.dim) + color(`stratum+tcp://<this-pc>:${stratumPort}`, C.bold) + '\n');
+        const lanIp = detectLanIp();
+        process.stdout.write(color('Point your miner at ', C.dim) + color(`stratum+tcp://${lanIp}:${stratumPort}`, C.bold) + '\n');
+        if (lanIp !== '127.0.0.1') {
+            process.stdout.write(color('  (or ', C.dim) + color(`stratum+tcp://127.0.0.1:${stratumPort}`, C.bold) + color(' from this same PC)', C.dim) + '\n');
+        }
         process.stdout.write(color('Open dashboard at  ', C.dim) + color(`http://localhost:${dashboardPort}`, C.bold) + '\n');
         process.stdout.write('\n');
 

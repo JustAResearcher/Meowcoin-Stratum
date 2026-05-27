@@ -56,6 +56,22 @@ process.on('unhandledRejection', (reason) => {
 
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
+
+// Best-effort LAN IP — the first non-internal IPv4. Used to print a stratum
+// URL miners on other machines can paste verbatim. Falls back to 127.0.0.1
+// if the only NICs we see are loopback (rare; happens in some VMs).
+function detectLanIp() {
+    const ifaces = os.networkInterfaces();
+    for (const name of Object.keys(ifaces)) {
+        for (const iface of ifaces[name] || []) {
+            if (iface.family === 'IPv4' && !iface.internal && iface.address) {
+                return iface.address;
+            }
+        }
+    }
+    return '127.0.0.1';
+}
 
 const Stratum = require('../libs/class.Stratum');
 const { BlockLogger, getBlockSubsidy, COMMUNITY_FUND_PCT } = require('../libs/class.BlockLogger');
@@ -193,11 +209,16 @@ async function main() {
         subversion: probe.subversion,
         height: probe.height,
     });
+    dashboardState.setLanIp(detectLanIp());
 
+    const lanIp = detectLanIp();
     stratum.init(() => {
         const stratumPort = (config.port && config.port.number) || 3333;
         console.log(c('✓', C.green) + ` Stratum listening on ${c(`0.0.0.0:${stratumPort}`, C.bold)}.`);
-        console.log(c('  Point your miner at: ', C.dim) + c(`stratum+tcp://<this-pc>:${stratumPort}`, C.bold));
+        console.log(c('  Point your miner at: ', C.dim) + c(`stratum+tcp://${lanIp}:${stratumPort}`, C.bold));
+        if (lanIp !== '127.0.0.1') {
+            console.log(c(`  (or stratum+tcp://127.0.0.1:${stratumPort} from this same PC)`, C.dim));
+        }
     });
 
     let dashboardServer = null;

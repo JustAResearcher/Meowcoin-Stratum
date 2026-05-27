@@ -128,7 +128,8 @@ function render(snap) {
     }
 
     // Config card
-    const stratumUrl = `stratum+tcp://<your-pc-ip>:${snap.config.stratumPort || '?'}`;
+    const host = snap.config.lanIp || '127.0.0.1';
+    const stratumUrl = `stratum+tcp://${host}:${snap.config.stratumPort || '?'}`;
     $('info-stratum').textContent = stratumUrl;
     $('info-coinbase').textContent = snap.config.coinbaseAddress || '—';
     $('info-rpc').textContent = (snap.config.rpcHost && snap.config.rpcPort)

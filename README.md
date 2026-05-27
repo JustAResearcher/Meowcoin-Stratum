@@ -28,9 +28,27 @@ Forked from [JustAResearcher/Meowcoin-Stratum](https://github.com/JustAResearche
    - picks a stratum port (default 3333)
    - writes `config.json`
 
-4. Point your miner at `stratum+tcp://<your-pc-ip>:3333` with any username (the worker name shows up on the dashboard).
+4. Point your miner at `stratum+tcp://127.0.0.1:3333` (or the LAN IP of this PC if mining from another machine — MeowSolo prints the exact URL when it starts). Any username works; the worker name shows up on the dashboard.
 
 5. Open `http://localhost:8080` to see live stats.
+
+### SRBMiner-MULTI example (Windows .bat)
+
+Save next to `SRBMiner-MULTI.exe`:
+
+```batch
+@echo off
+title Meowcoin Solo Miner
+SRBMiner-MULTI.exe --algorithm meowpow --pool stratum+tcp://127.0.0.1:3333 --wallet x --password x
+pause
+```
+
+Notes:
+
+- `--algorithm meowpow` — SRBMiner has dedicated MeowPoW support. Don't use `kawpow`; shares will be rejected.
+- The `--wallet` value is ignored for solo mining — your payout address is set in MeowSolo's `config.json`.
+- Don't paste literal `<…>` placeholders into a .bat — `cmd.exe` treats `<` as input redirection.
+- If SRBMiner runs on a different rig from MeowSolo, swap `127.0.0.1` for the MeowSolo box's LAN IP (printed when MeowSolo starts).
 
 ## Quick start (Linux)
 

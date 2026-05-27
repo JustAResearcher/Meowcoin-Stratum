@@ -29,6 +29,7 @@ class DashboardState extends EventEmitter {
         this._blocks = [];
         this._chain = null;
         this._currentJob = null;
+        this._lanIp = '127.0.0.1';
 
         this._totalShares = 0;
         this._totalValid = 0;
@@ -40,6 +41,11 @@ class DashboardState extends EventEmitter {
 
     setChain(info) {
         this._chain = info;
+        this._touch();
+    }
+
+    setLanIp(ip) {
+        this._lanIp = ip || '127.0.0.1';
         this._touch();
     }
 
@@ -206,6 +212,7 @@ class DashboardState extends EventEmitter {
                 rpcPort: this._config.rpc && this._config.rpc.port,
                 coinbaseAddress: this._config.coinbaseAddress,
                 devRewardPercent: this._config.devRewardPercent,
+                lanIp: this._lanIp,
             },
         };
     }

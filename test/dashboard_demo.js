@@ -29,9 +29,10 @@ const state = new DashboardState({
 state.setChain({
     network: 'mainnet',
     consensus: 'apex',
-    subversion: '/Meowcoin Core:4.0.0/APEX/',
+    subversion: '/Meowcoin:30.2.0/',
     height: 2_456_789,
 });
+state.setLanIp('192.168.1.42');
 
 const port = parseInt(process.env.PORT || '8080', 10);
 const server = new DashboardServer({ state, port, host: '127.0.0.1' });
