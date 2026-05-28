@@ -34,7 +34,16 @@ Then:
 3. Point your GPU miner at the stratum URL it prints — e.g. `stratum+tcp://127.0.0.1:3333`.
 4. Open `http://localhost:8080` for the live dashboard.
 
-That's it. Block rewards land in the address you entered, paid by your own Meowcoin Core when one of your miners finds a block.
+## What you get per block
+
+Meowcoin's block reward is **5000 MEWC total**, split by consensus:
+
+- **3000 MEWC + all transaction fees → your payout address** (the one you entered in the wizard)
+- **2000 MEWC → community fund** (`MPyNGZSSZ4rbjkVJRLn3v64pMcktpEYJnU`)
+
+The split is enforced by Meowcoin Core — same for every miner. The daemon tells the stratum the exact required outputs via `getblocktemplate`; the stratum just honors them.
+
+> ⚠ **Important for anyone who ran v2.0.x:** the old `Coinbase.js` was hardcoded to compute the dev cut from a stale 5000-MEWC subsidy assumption, so it shortchanged the miner output to 1000 MEWC (instead of the consensus-enforced 3000). [**v2.1.0**](https://github.com/JustAResearcher/Meowcoin-Stratum/releases/tag/v2.1.0) fixes that. Upgrade.
 
 ## Mining software
 
@@ -48,9 +57,9 @@ SRBMiner-MULTI.exe --algorithm meowpow --pool stratum+tcp://127.0.0.1:3333 --wal
 pause
 ```
 
-**T-Rex / TeamRedMiner / NBMiner** — same flags pattern: `-a meowpow -o stratum+tcp://127.0.0.1:3333 -u x -p x`.
+**T-Rex / TeamRedMiner / NBMiner** — same flag pattern: `-a meowpow -o stratum+tcp://127.0.0.1:3333 -u x -p x`.
 
-Wallet/username/password values are ignored for solo mining. Your payout address is in MeowSolo's `config.json`.
+Wallet/username/password values are ignored by solo mining. Your payout address lives in MeowSolo's `config.json`.
 
 If MeowSolo is on a different PC from your miner, swap `127.0.0.1` for the LAN IP MeowSolo prints at startup.
 
@@ -61,8 +70,10 @@ If MeowSolo is on a different PC from your miner, swap `127.0.0.1` for the LAN I
 | `Couldn't connect to Meowcoin Core at 127.0.0.1:9766` | Start Meowcoin Core; ensure `server=1` is in `meowcoin.conf`. |
 | `RPC username/password rejected (401)` | Delete `config.json`, re-run, the wizard rewrites it. |
 | `Invalid coinbaseAddress` | Wrong network or typo. Run `meowsolo init` and paste a fresh address from your wallet. |
-| Miner connects but no shares | Lower `port.diff` in `config.json` (try `10000`) and restart. |
-| Found a block but it says "pending verify" | That's normal — Core verifies the next block. Usually clears within a minute. |
+| Miner connects but no shares accepted | Lower `port.diff` in `config.json` (try `10000`) and restart. |
+| `Can't write block log to ... EACCES` | You launched the .exe from a write-protected folder (Program Files, a network share). Move it to your Desktop or Downloads and run again. |
+
+When a block is found, `block_finds.xlsx` gets appended next to the binary (height, miner reward in MEWC, fees, txid, worker, nonce). The absolute path is printed at startup so you know where to look.
 
 ## Configuration
 
@@ -82,7 +93,7 @@ The wizard generates `config.json`. You can hand-edit any of these later:
 - `dashboard.enabled: false` (or `--no-dashboard`) to skip the web UI.
 - `consensus: "legacy"` only for pre-APEX Meowcoin Core 3.0.6 nodes (rare).
 
-Block-finds get appended to `block_finds.xlsx` next to the binary — height, reward, worker, nonce, txid.
+The community-fund output (2000 MEWC to `MPyN…`) is **not** a config knob — it's set by consensus from `getblocktemplate` and applied to every block.
 
 ## CLI
 
