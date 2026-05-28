@@ -2,8 +2,6 @@
     "consensus": "apex",
     "network": "mainnet",
     "coinbaseAddress": "M-PREFIX-MEOWCOIN-ADDRESS-HERE",
-    "devAddress": "MPyNGZSSZ4rbjkVJRLn3v64pMcktpEYJnU",
-    "devRewardPercent": 40,
     "blockBrand": "MeowSolo Miner",
     "host": "0.0.0.0",
     "port": {

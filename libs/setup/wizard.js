@@ -159,12 +159,14 @@ async function run({ configPath, force = false } = {}) {
         const dashboardPort = parseInt(await p.ask('Web dashboard port (http://localhost:PORT):', '8080'), 10) || 8080;
 
         // ── Build config ────────────────────────────────────────────────────
+        // Note: devAddress / devRewardPercent are no longer here. Post-APEX
+        // Meowcoin enforces the community fund split at the consensus layer
+        // (the daemon's GBT carries CommunityAutonomousAddress + Value).
+        // Coinbase.js honours those fields directly.
         const config = {
             consensus: probe.consensus,
             network: probe.network,
             coinbaseAddress: coinbase,
-            devAddress: probe.network === 'mainnet' ? 'MPyNGZSSZ4rbjkVJRLn3v64pMcktpEYJnU' : '',
-            devRewardPercent: probe.network === 'mainnet' ? 40 : 0,
             blockBrand: probe.network === 'mainnet' ? 'MeowSolo Miner' : 'MeowSolo Testnet Miner',
             host: '0.0.0.0',
             port: { number: stratumPort, diff: stratumDiff },

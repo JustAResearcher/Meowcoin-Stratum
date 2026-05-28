@@ -74,7 +74,7 @@ function detectLanIp() {
 }
 
 const Stratum = require('../libs/class.Stratum');
-const { BlockLogger, getBlockSubsidy, COMMUNITY_FUND_PCT } = require('../libs/class.BlockLogger');
+const { BlockLogger, COIN } = require('../libs/class.BlockLogger');
 const { run: runWizard } = require('../libs/setup/wizard');
 const { probeNode } = require('../libs/setup/probe');
 const { validateCoinbaseAddress } = require('../libs/setup/address');
@@ -201,7 +201,26 @@ async function main() {
 
     // ── Spin up the stratum
     const stratum = new Stratum(config);
-    const blockLogger = new BlockLogger({ filepath: config.blockLogFile || 'block_finds.xlsx' });
+
+    // Resolve block log to an absolute path next to the user's config (or cwd
+    // for a relative override). That way the user always knows where to look.
+    // pkg-packaged binaries set process.cwd() to wherever the .exe was launched;
+    // for double-click on Windows that's the folder containing meowsolo.exe.
+    const blockLogPath = path.isAbsolute(config.blockLogFile || '')
+        ? config.blockLogFile
+        : path.resolve(process.cwd(), config.blockLogFile || 'block_finds.xlsx');
+
+    // Detect unwritable parent dir up-front (Program Files, etc.) instead of
+    // silently failing at first block.
+    try {
+        fs.accessSync(path.dirname(blockLogPath), fs.constants.W_OK);
+        console.log(c('  Block log:    ', C.dim) + c(blockLogPath, C.bold));
+    } catch (err) {
+        console.warn(c(`! Can't write block log to ${blockLogPath}: ${err.code}`, C.yellow));
+        console.warn(c('  Move meowsolo.exe out of Program Files (or set blockLogFile to a writable absolute path in config.json).', C.dim));
+    }
+
+    const blockLogger = new BlockLogger({ filepath: blockLogPath });
     const dashboardState = new DashboardState({ stratum, config, startedAt: Date.now() });
     dashboardState.setChain({
         network: probe.network,
@@ -250,14 +269,30 @@ async function main() {
     stratum.on(Stratum.EVENT_SHARE_SUBMITTED, (ev) => {
         const s = ev.share;
         if (s.isValidBlock) {
-            console.log(c(`★ BLOCK FOUND by ${s.client.workerName} at height ${s.jobHeight}!`, C.green, C.bold));
-            const subsidy = getBlockSubsidy(s.jobHeight);
-            const communityShare = Math.floor((subsidy * COMMUNITY_FUND_PCT) / 100);
-            const minerReward = subsidy - communityShare;
+            // Use the actual chain values from the block template the miner solved
+            // against, not a hardcoded subsidy. Post-APEX Meowcoin pays the
+            // community fund via a consensus-required separate output
+            // (CommunityAutonomousValue), so coinbasevalue IS the miner's share.
+            const tpl = (s.job && s.job.blockTemplate) || {};
+            const minerSat = tpl.coinbasevalue || 0;
+            const communitySat = tpl.CommunityAutonomousValue || 0;
+            const totalFees = (tpl.transactions || []).reduce((sum, tx) => sum + (tx.fee || 0), 0);
+            const minerMewc = (minerSat / COIN).toFixed(8);
+            const communityMewc = (communitySat / COIN).toFixed(2);
+            const feesMewc = (totalFees / COIN).toFixed(8);
+
+            console.log('');
+            console.log(c(`★ BLOCK FOUND  height=${s.jobHeight}  worker=${s.client.workerName}`, C.green, C.bold));
+            console.log(c(`  miner reward:  ${minerMewc} MEWC  (incl. ${feesMewc} fees)`, C.green));
+            if (communitySat > 0) {
+                console.log(c(`  community fund: ${communityMewc} MEWC → ${tpl.CommunityAutonomousAddress}`, C.dim));
+            }
+            console.log('');
+
             blockLogger.logBlock({
                 height: s.jobHeight,
-                rewardSat: minerReward,
-                feeSat: 0,
+                rewardSat: minerSat,
+                feeSat: totalFees,
                 txidHex: s.blockTxId || '',
                 worker: s.client.workerName,
                 nonceHex: s.nonceHex,

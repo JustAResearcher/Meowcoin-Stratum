@@ -85,6 +85,14 @@ class Share {
     get jobHeight() { return this._job ? this._job.height : 0; }
 
     /**
+     * Get the Job the share was submitted against, so callers can pull
+     * blockTemplate / coinbasevalue / CommunityAutonomousValue at block-find time.
+     * Null until #validate() has run.
+     * @returns {Job|null}
+     */
+    get job() { return this._job; }
+
+    /**
      * Get the time of the share submission in epoch seconds.
      * @returns {number}
      */

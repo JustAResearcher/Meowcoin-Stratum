@@ -21,9 +21,7 @@ const
     BUFFER_COINBASE_WITNESS = Buffer.concat([
         Buffer.from([0x01, 0x20]),  // 1 item, 32 bytes
         Buffer.alloc(32)            // 32 zero bytes
-    ]),
-    // Base block subsidy: 5000 MEWC = 500000000000 satoshis (no halving in Meowcoin)
-    BASE_SUBSIDY_ST = 500000000000;
+    ]);
 
 
 class Coinbase {
@@ -175,24 +173,24 @@ class Coinbase {
         const blockTemplate = _._blockTemplate;
         const poolAddressScript = scripts.makeAddressScript(_._coinbaseAddress);
 
-        let totalReward = blockTemplate.coinbasevalue;
-
         _._outputCount = 0;
 
-        // Dev fund split: flat 2000 MEWC to dev, 3000 MEWC + all fees to miner
-        const devAddress = _._devAddress;
-        const devRewardPercent = _._devRewardPercent;
+        // Meowcoin post-APEX consensus splits the block reward at the daemon
+        // level. `coinbasevalue` is the MINER's portion (subsidy + fees).
+        // The community/dev fund cut is carried as a SEPARATE required output
+        // — the daemon tells us the address and amount via these GBT fields:
+        //
+        //   CommunityAutonomousAddress: "M..."
+        //   CommunityAutonomousValue:   <satoshis>
+        //
+        // We pay the full coinbasevalue to the miner and add the community
+        // output verbatim. The block is rejected if the community output is
+        // missing or has the wrong amount/address.
+        _._addOutput(outputsArr, blockTemplate.coinbasevalue, poolAddressScript, true);
 
-        if (devAddress && devRewardPercent > 0) {
-            const devAddressScript = scripts.makeAddressScript(devAddress);
-            // Dev gets a flat percentage of the BASE subsidy only (not fees)
-            const devRewardSt = Math.floor(BASE_SUBSIDY_ST * devRewardPercent / 100);
-            const minerRewardSt = totalReward - devRewardSt;
-            _._addOutput(outputsArr, minerRewardSt, poolAddressScript, true);
-            _._addOutput(outputsArr, devRewardSt, devAddressScript, true);
-        }
-        else {
-            _._addOutput(outputsArr, totalReward, poolAddressScript, true);
+        if (blockTemplate.CommunityAutonomousAddress && blockTemplate.CommunityAutonomousValue > 0) {
+            const communityScript = scripts.makeAddressScript(blockTemplate.CommunityAutonomousAddress);
+            _._addOutput(outputsArr, blockTemplate.CommunityAutonomousValue, communityScript, true);
         }
 
         // Pre-APEX (3.0.6) nodes don't support SegWit and shouldn't carry a
